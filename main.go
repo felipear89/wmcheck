@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/context"
+	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 )
 
@@ -191,8 +192,28 @@ func hello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "hello")
 }
 
+func wrapHandler(h http.Handler) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		context.Set(r, "params", ps)
+		h.ServeHTTP(w, r)
+	}
+}
+
+type router struct {
+	*httprouter.Router
+}
+
+func (r *router) Get(path string, handler http.Handler) {
+	r.GET(path, wrapHandler(handler))
+}
+
+func NewRouter() *router {
+	return &router{httprouter.New()}
+}
+
 func main() {
+	router := NewRouter()
 	commonHandler := alice.New(context.ClearHandler, xTidHandler, recoverHandler)
-	http.Handle("/", commonHandler.ThenFunc(hello))
-	http.ListenAndServe(":8000", nil)
+	router.Get("/", commonHandler.ThenFunc(hello))
+	http.ListenAndServe(":8000", router)
 }
