@@ -2,11 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+
+	"github.com/gorilla/context"
+	"github.com/justinas/alice"
 )
 
 // DoCheck control the check execution
@@ -118,7 +124,7 @@ func DoRequest(req *http.Request) (string, error) {
 	return string(body), nil
 }
 
-func main() {
+func run() {
 	var config Config
 	err := LoadConfiguration("./checks.json", &config)
 	if err != nil {
@@ -152,4 +158,41 @@ func main() {
 
 	}
 	close(messages)
+}
+
+func recoverHandler(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("panic: %+v", err)
+				http.Error(w, http.StatusText(500), 500)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
+
+func xTidHandler(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		xtid := r.Header.Get("X-tid")
+		if xtid == "" {
+			xtid = strconv.Itoa(rand.Intn(1000))
+		}
+		context.Set(r, "xtid", xtid)
+		w.Header().Add("X-tid", xtid)
+		next.ServeHTTP(w, r)
+
+	}
+	return http.HandlerFunc(fn)
+}
+
+func hello(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "hello")
+}
+
+func main() {
+	commonHandler := alice.New(context.ClearHandler, xTidHandler, recoverHandler)
+	http.Handle("/", commonHandler.ThenFunc(hello))
+	http.ListenAndServe(":8000", nil)
 }
