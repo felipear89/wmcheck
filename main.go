@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -83,9 +84,9 @@ type Validation struct {
 func (v Validation) String() string {
 	if v.Contain != "" {
 		return "should contain " + v.Contain
-	} else {
-		return "should not contain " + v.NotContain
 	}
+	return "should not contain " + v.NotContain
+
 }
 
 // LoadConfiguration open a file and decode json to Config struct
@@ -125,7 +126,8 @@ func DoRequest(req *http.Request) (string, error) {
 	return string(body), nil
 }
 
-func run() {
+func result(w http.ResponseWriter, r *http.Request) {
+
 	var config Config
 	err := LoadConfiguration("./checks.json", &config)
 	if err != nil {
@@ -149,16 +151,12 @@ func run() {
 		}(DoCheck{check, request})
 	}
 
+	results := make([]Result, 0)
 	for i := 0; i < len(config.Checks); i++ {
-		result := <-messages
-		if len(result.FailedValidations) == 0 {
-			log.Printf(result.Name + " is OK")
-		} else {
-			log.Printf(result.Name+" %v", result.FailedValidations)
-		}
-
+		results = append(results, <-messages)
 	}
 	close(messages)
+	json.NewEncoder(w).Encode(results)
 }
 
 func recoverHandler(next http.Handler) http.Handler {
@@ -211,9 +209,16 @@ func NewRouter() *router {
 	return &router{httprouter.New()}
 }
 
+func index(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("index.html")
+	t.Execute(w, nil)
+}
+
 func main() {
 	router := NewRouter()
 	commonHandler := alice.New(context.ClearHandler, xTidHandler, recoverHandler)
-	router.Get("/", commonHandler.ThenFunc(hello))
+	router.Get("/hello", commonHandler.ThenFunc(hello))
+	router.Get("/result", commonHandler.ThenFunc(result))
+	router.Get("/", http.FileServer(http.Dir(".")))
 	http.ListenAndServe(":8000", router)
 }
