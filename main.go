@@ -55,6 +55,9 @@ func (c DoCheck) validate(bodyString string) Result {
 			validations = append(validations, validation)
 		}
 	}
+	if len(validations) > 0 {
+		log.Println("Validation Failed - " + c.check.Name + " " + bodyString)
+	}
 	return Result{Name: c.check.Name, FailedValidations: validations}
 }
 
