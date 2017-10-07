@@ -163,13 +163,15 @@ func run() {
 				bodyString, err := doCheck.DoRequest()
 
 				if err != nil {
-					log.Fatal(err)
+					log.Println("ERROR", err)
+					time.Sleep(30000 * time.Millisecond)
+					continue
 				}
 
 				result := doCheck.validate(bodyString)
 				result.LastUpdate = time.Now()
 				messages <- result
-				time.Sleep(10000 * time.Millisecond)
+				time.Sleep(30000 * time.Millisecond)
 			}
 
 		}(DoCheck{check, request})
