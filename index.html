@@ -12,7 +12,7 @@
 </head>
 
 <body>
-  <marquee BGCOLOR="YELLOW" SCROLLDELAY=700 SCROLLAMOUNT=100><h1>CHECKOUT DELATOR</h1>
+  <marquee BGCOLOR="YELLOW" SCROLLDELAY=700 SCROLLAMOUNT=100><h1>CHECKOUT X9</h1>
   
   </marquee>
   <table class="table table-striped">
@@ -21,6 +21,7 @@
         <th>#</th>
         <th>Check</th>
         <th>Status</th>
+        <th>Last Update</th>
       </tr>
     </thead>
     <tbody>
@@ -28,6 +29,7 @@
     </tbody>
   </table>  
   
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
   <script>
 
     function displayFailedValidations(validations) {
@@ -49,6 +51,7 @@
           newRowContent += `<td>${i}</td>`
           newRowContent += `<td>${json[i].Name}</td>`
           newRowContent += `<td>${displayFailedValidations(json[i].FailedValidations)}</td>`
+          newRowContent += `<td>${moment(json[i].LastUpdate).format("YYYY-MM-DD hh:mm:ss")}</td>`
           newRowContent += "</tr>"
         }
         document.querySelector("tbody").innerHTML = newRowContent;

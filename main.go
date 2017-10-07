@@ -9,13 +9,27 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 )
+
+type ByName []Result
+
+func (s ByName) Len() int {
+	return len(s)
+}
+func (s ByName) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s ByName) Less(i, j int) bool {
+	return s[i].Name < s[j].Name
+}
 
 // DoCheck control the check execution
 type DoCheck struct {
@@ -45,6 +59,7 @@ func request(check Check) (string, error) {
 type Result struct {
 	Name              string
 	FailedValidations []Validation
+	LastUpdate        time.Time
 }
 
 func (c DoCheck) validate(bodyString string) Result {
@@ -89,8 +104,9 @@ func (v Validation) String() string {
 		return "should contain " + v.Contain
 	}
 	return "should not contain " + v.NotContain
-
 }
+
+var m map[string]Result
 
 // LoadConfiguration open a file and decode json to Config struct
 func LoadConfiguration(file string, config *Config) error {
@@ -129,7 +145,7 @@ func DoRequest(req *http.Request) (string, error) {
 	return string(body), nil
 }
 
-func result(w http.ResponseWriter, r *http.Request) {
+func run() {
 
 	var config Config
 	err := LoadConfiguration("./checks.json", &config)
@@ -142,24 +158,41 @@ func result(w http.ResponseWriter, r *http.Request) {
 
 	for _, check := range config.Checks {
 		go func(doCheck DoCheck) {
-			bodyString, err := doCheck.DoRequest()
 
-			if err != nil {
-				log.Fatal(err)
+			for {
+				bodyString, err := doCheck.DoRequest()
+
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				result := doCheck.validate(bodyString)
+				result.LastUpdate = time.Now()
+				messages <- result
+				time.Sleep(10000 * time.Millisecond)
 			}
-
-			result := doCheck.validate(bodyString)
-			messages <- result
 
 		}(DoCheck{check, request})
 	}
 
-	results := make([]Result, 0)
-	for i := 0; i < len(config.Checks); i++ {
-		results = append(results, <-messages)
+	m = make(map[string]Result)
+
+	for {
+		log.Println("Waiting message")
+		r := <-messages
+		m[r.Name] = r
+		log.Println("Receive message " + r.Name)
 	}
-	close(messages)
-	json.NewEncoder(w).Encode(results)
+}
+
+func result(w http.ResponseWriter, r *http.Request) {
+	result := make([]Result, 0)
+	for k := range m {
+		result = append(result, m[k])
+	}
+
+	sort.Sort(ByName(result))
+	json.NewEncoder(w).Encode(result)
 }
 
 func recoverHandler(next http.Handler) http.Handler {
@@ -218,6 +251,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	go run()
 	router := NewRouter()
 	commonHandler := alice.New(context.ClearHandler, xTidHandler, recoverHandler)
 	router.Get("/hello", commonHandler.ThenFunc(hello))
