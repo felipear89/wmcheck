@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -31,7 +32,6 @@ func (s ByName) Less(i, j int) bool {
 	return s[i].Name < s[j].Name
 }
 
-// DoCheck control the check execution
 type DoCheck struct {
 	check   Check
 	request func(Check) (string, error)
@@ -130,7 +130,14 @@ func NewRequest(check Check) (*http.Request, error) {
 }
 
 func DoRequest(req *http.Request) (string, error) {
-	client := http.Client{}
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
@@ -164,8 +171,6 @@ func run() {
 
 				if err != nil {
 					log.Println("ERROR", err)
-					time.Sleep(30000 * time.Millisecond)
-					continue
 				}
 
 				result := doCheck.validate(bodyString)
