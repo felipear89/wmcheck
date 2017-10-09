@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	lib "wmcheck/lib"
 
@@ -64,7 +65,7 @@ func main() {
 	appContext.results = make(map[string]lib.Result)
 	messages := make(chan lib.Result)
 
-	lib.StartMonitor(messages)
+	lib.StartMonitor(messages, os.Getenv("CONFIG_PATH"))
 
 	go func() {
 		for {

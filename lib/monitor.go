@@ -16,10 +16,10 @@ func LoadConfiguration(file string, config *Config) error {
 	return json.NewDecoder(configFile).Decode(config)
 }
 
-func StartMonitor(messages chan Result) {
+func StartMonitor(messages chan Result, configPath string) {
 
 	var config Config
-	err := LoadConfiguration("./checks.json", &config)
+	err := LoadConfiguration(configPath, &config)
 	if err != nil {
 		log.Fatal(err)
 		return
