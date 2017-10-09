@@ -2,10 +2,13 @@ package wmcheck
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
+	"strconv"
 
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
@@ -64,10 +67,18 @@ func resultChanListener(ac appContext) {
 	for {
 		log.Println("Waiting for a result...")
 		r := <-ac.resultChan
-		ac.results[r.Name] = r
 		if len(r.FailedValidations) > 0 {
 			log.Println("Validation Failed - " + r.Name + " " + r.Body)
 		}
+		if len(ac.results[r.Name].FailedValidations) != len(r.FailedValidations) {
+			token := os.Getenv("SLACK_TOKEN")
+			channel := os.Getenv("SLACK_CHANNEL")
+			text := url.QueryEscape(r.Name + " updated! Failed Validations: " + strconv.Itoa(len(r.FailedValidations)))
+			url := "https://slack.com/api/chat.postMessage?token=%s&channel=%s&text=%s&as_user=true"
+			url = fmt.Sprintf(url, token, channel, text)
+			Request("GET", url, "", make(map[string]string))
+		}
+		ac.results[r.Name] = r
 		log.Println("Result " + r.Name + " updated")
 	}
 }
