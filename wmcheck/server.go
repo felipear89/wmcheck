@@ -1,4 +1,4 @@
-package main
+package wmcheck
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"sort"
-	lib "wmcheck/lib"
 
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
@@ -14,17 +13,18 @@ import (
 )
 
 type appContext struct {
-	results map[string]lib.Result
+	results    map[string]Result
+	resultChan chan Result
 }
 
 func (ac appContext) result(w http.ResponseWriter, r *http.Request) {
 	mapResult := ac.results
-	results := make([]lib.Result, 0)
+	results := make([]Result, 0)
 	for k := range mapResult {
 		results = append(results, mapResult[k])
 	}
 
-	sort.Sort(lib.ByName(results))
+	sort.Sort(ByName(results))
 	json.NewEncoder(w).Encode(results)
 }
 
@@ -60,21 +60,35 @@ func newRouter() *router {
 	return &router{httprouter.New()}
 }
 
-func main() {
-	appContext := appContext{}
-	appContext.results = make(map[string]lib.Result)
-	messages := make(chan lib.Result)
-
-	lib.StartMonitor(messages, os.Getenv("CONFIG_PATH"))
-
-	go func() {
-		for {
-			log.Println("Waiting message")
-			r := <-messages
-			appContext.results[r.Name] = r
-			log.Println("Receive message " + r.Name)
+func resultChanListener(ac appContext) {
+	for {
+		log.Println("Waiting for a result...")
+		r := <-ac.resultChan
+		ac.results[r.Name] = r
+		if len(r.FailedValidations) > 0 {
+			log.Println("Validation Failed - " + r.Name + " " + r.Body)
 		}
-	}()
+		log.Println("Result " + r.Name + " updated")
+	}
+}
+
+func loadConfig() Config {
+	var config Config
+	configPath := os.Getenv("CONFIG_PATH")
+	err := loadConfiguration(configPath, &config)
+	if err != nil {
+		log.Fatalf("Failed to load CONFIG_PATH=%s %s\n", configPath, err)
+	}
+	return config
+}
+
+func StartServer() {
+
+	appContext := appContext{results: make(map[string]Result), resultChan: make(chan Result)}
+
+	StartMonitor(appContext.resultChan, loadConfig())
+
+	go resultChanListener(appContext)
 
 	router := newRouter()
 	commonHandler := alice.New(context.ClearHandler, recoverHandler)

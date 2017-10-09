@@ -1,7 +1,6 @@
 package wmcheck
 
 import (
-	"log"
 	"strings"
 	"time"
 )
@@ -32,7 +31,7 @@ func (c Check) getHeaders() map[string]string {
 	return headers
 }
 
-func (c Check) validate(bodyString string) Result {
+func (c Check) validate(bodyString string) []Validation {
 	validations := make([]Validation, 0)
 	for _, validation := range c.Validations {
 		if validation.Contain != "" && !strings.Contains(bodyString, validation.Contain) ||
@@ -40,16 +39,14 @@ func (c Check) validate(bodyString string) Result {
 			validations = append(validations, validation)
 		}
 	}
-	if len(validations) > 0 {
-		log.Println("Validation Failed - " + c.Name + " " + bodyString)
-	}
-	return Result{Name: c.Name, FailedValidations: validations}
+	return validations
 }
 
 type Result struct {
 	Name              string
 	FailedValidations []Validation
 	LastUpdate        time.Time
+	Body              string
 }
 
 type Validation struct {

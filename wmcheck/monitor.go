@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func LoadConfiguration(file string, config *Config) error {
+func loadConfiguration(file string, config *Config) error {
 	configFile, err := os.Open(file)
 	if err != nil {
 		return err
@@ -16,14 +16,7 @@ func LoadConfiguration(file string, config *Config) error {
 	return json.NewDecoder(configFile).Decode(config)
 }
 
-func StartMonitor(messages chan Result, configPath string) {
-
-	var config Config
-	err := LoadConfiguration(configPath, &config)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+func StartMonitor(resultChan chan Result, config Config) {
 
 	for _, c := range config.Checks {
 		go func(check Check) {
@@ -32,12 +25,12 @@ func StartMonitor(messages chan Result, configPath string) {
 				bodyString, err := Request(check.Request.Method, check.Request.URL, check.Request.Body, check.getHeaders())
 
 				if err != nil {
-					log.Println("ERROR", err)
+					log.Println("ERROR ", err)
 				}
 
-				result := check.validate(bodyString)
-				result.LastUpdate = time.Now()
-				messages <- result
+				validations := check.validate(bodyString)
+				result := Result{Name: check.Name, FailedValidations: validations, LastUpdate: time.Now(), Body: bodyString}
+				resultChan <- result
 				time.Sleep(30000 * time.Millisecond)
 			}
 		}(c)
