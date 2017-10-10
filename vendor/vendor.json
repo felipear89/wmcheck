@@ -19,10 +19,6 @@
 			"path": "github.com/justinas/alice",
 			"revision": "1051eaf52fcafdd87ead59d28b065f1fcb8274ec",
 			"revisionTime": "2016-09-10T10:38:22Z"
-		},
-		{
-			"path": "https://github.com/justinas/alice",
-			"revision": ""
 		}
 	],
 	"rootPath": "github.com/felipear89/wmcheck"
