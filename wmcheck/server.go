@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"sort"
-	"strconv"
 
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
@@ -63,6 +62,13 @@ func newRouter() *router {
 	return &router{httprouter.New()}
 }
 
+func getStatusMessage(failedValidations []Validation) string {
+	if len(failedValidations) == 0 {
+		return "OK"
+	}
+	return "FAIL"
+}
+
 func resultChanListener(ac appContext) {
 	for {
 		log.Println("Waiting for a result...")
@@ -73,7 +79,8 @@ func resultChanListener(ac appContext) {
 		if len(ac.results[r.Name].FailedValidations) != len(r.FailedValidations) {
 			token := os.Getenv("SLACK_TOKEN")
 			channel := os.Getenv("SLACK_CHANNEL")
-			text := url.QueryEscape(r.Name + " updated! Failed Validations: " + strconv.Itoa(len(r.FailedValidations)))
+			statusMessage := getStatusMessage(r.FailedValidations)
+			text := url.QueryEscape(r.Name + " updated! The status is: " + statusMessage)
 			url := "https://slack.com/api/chat.postMessage?token=%s&channel=%s&text=%s&as_user=true"
 			url = fmt.Sprintf(url, token, channel, text)
 			Request("GET", url, "", make(map[string]string))
