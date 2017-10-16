@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func loadConfiguration(file string, config *Config) error {
+func loadConfiguration(file string, config interface{}) error {
 	configFile, err := os.Open(file)
 	if err != nil {
 		return err

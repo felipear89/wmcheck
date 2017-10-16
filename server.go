@@ -112,6 +112,8 @@ func StartServer() {
 	commonHandler := alice.New(context.ClearHandler, recoverHandler)
 	router.Get("/result", commonHandler.ThenFunc(appContext.result))
 	router.Get("/", http.FileServer(http.Dir(".")))
-	http.ListenAndServe(":8000", router)
-
+	var configEnv Env
+	loadConfiguration("./config/config.json", &configEnv)
+	fmt.Println(configEnv)
+	http.ListenAndServe(":"+configEnv.App.Port, router)
 }

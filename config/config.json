@@ -1,0 +1,11 @@
+{
+
+  "app": {
+    "port": "9000"
+  },
+
+  "slack": {
+    "SLACK_CHANNEL": "",
+    "SLACK_TOKEN": ""
+  }
+}

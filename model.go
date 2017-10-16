@@ -23,6 +23,16 @@ type Check struct {
 	Validations []Validation `json:"validations"`
 }
 
+type Env struct {
+	App struct {
+		Port string `json:"port"`
+	} `json:"app"`
+	Slack struct {
+		SLACKCHANNEL string `json:"SLACK_CHANNEL"`
+		SLACKTOKEN   string `json:"SLACK_TOKEN"`
+	} `json:"slack"`
+}
+
 func (c Check) getHeaders() map[string]string {
 	headers := make(map[string]string)
 	for _, h := range c.Request.Headers {
