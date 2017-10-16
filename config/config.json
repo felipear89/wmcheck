@@ -1,11 +1,10 @@
 {
-
   "app": {
     "port": "9000"
   },
 
   "slack": {
-    "SLACK_CHANNEL": "",
-    "SLACK_TOKEN": ""
+    "SLACK_CHANNEL": "edallproducts",
+    "SLACK_TOKEN": "xoxp-4198297754-190721781381-257087343236-82b32c7bfe77dfb3644390096e0bf75c"
   }
 }
