@@ -16,3 +16,6 @@ vendor/*/
 
 # OSx files
 .DS_Store
+
+# Node packages
+node_modules/
