@@ -1,0 +1,22 @@
+{
+  "name": "wmcheck",
+  "version": "1.0.0",
+  "description": "## How to run ```SLACK_CHANNEL={CHANNEL} SLACK_TOKEN={TOKEN} CONFIG_PATH={PATH}/checks.json go run ./cmd/main.go```",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipear89/wmcheck.git"
+  },
+  "author": "felipear89",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/felipear89/wmcheck/issues"
+  },
+  "homepage": "https://github.com/felipear89/wmcheck#readme"
+
+
+}
