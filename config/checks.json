@@ -1,0 +1,11 @@
+{
+  "checks": [
+    {
+      "name": "Google",
+      "request": {
+        "method": "GET",
+        "url": "http://google.com.br"
+      }
+    }
+  ]
+}
